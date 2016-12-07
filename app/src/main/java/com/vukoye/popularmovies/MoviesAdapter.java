@@ -70,8 +70,6 @@ public class MoviesAdapter extends RecyclerView.Adapter<MoviesAdapter.ViewHolder
 
         @Override
         public void onClick(final View view) {
-
-            //String movieId = mMoviesData[getAdapterPosition()];
             mClickHandler.onClick(getAdapterPosition());
         }
     }

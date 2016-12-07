@@ -8,11 +8,6 @@ import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
 
-import java.net.HttpURLConnection;
-
-/**
- * Created by nemanja on 12/5/16.
- */
 
 public final class MoviesJsonUtil {
 
@@ -38,26 +33,7 @@ public final class MoviesJsonUtil {
 
         MovieDataObject[] movieDataObjects = null;
 
-        //nvtd prouci kako ovo cudo menja izbacuje error
-        final String OWM_MESSAGE_CODE = "cod";
-
         JSONObject moviesJson = new JSONObject(jsonStr);
-
-        /* Is there an error? */
-        if (moviesJson.has(OWM_MESSAGE_CODE)) {
-            int errorCode = moviesJson.getInt(OWM_MESSAGE_CODE);
-
-            switch (errorCode) {
-                case HttpURLConnection.HTTP_OK:
-                    break;
-                case HttpURLConnection.HTTP_NOT_FOUND:
-                    /* Location invalid */
-                    return null;
-                default:
-                    /* Server probably down */
-                    return null;
-            }
-        }
 
         JSONArray moviesArray = moviesJson.getJSONArray(RESULTS);
         //Log.d(TAG, moviesArray.toString());
