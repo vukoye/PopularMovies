@@ -1,0 +1,12 @@
+<resources>
+    <string name="app_name">PopularMovies</string>
+    <string name="sort_by_popularity">Sort by Popularity</string>
+    <string name="sort_by_rating">Sort by Rating</string>
+    <string name="refresh">Refresh</string>
+    <string name="error_message">
+        An error has occurred. Please try again by clicking Refresh
+    </string>
+    <string name="notReceived">Movie Data Not received</string>
+
+    <string name="ratingString">%s/10</string>
+</resources>

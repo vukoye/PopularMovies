@@ -1,0 +1,54 @@
+<?xml version="1.0" encoding="utf-8"?>
+<RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:orientation="vertical">
+
+    <TextView
+        android:id="@+id/movie_details_title"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:padding="@dimen/padding_default"
+        android:layout_alignParentTop="true"
+        android:textSize="@dimen/text_size_large" />
+
+    <ImageView
+        android:id="@+id/movie_details_poster"
+        android:layout_width="@dimen/poster_width"
+        android:layout_height="@dimen/poster_height"
+        android:padding="@dimen/padding_default"
+        android:adjustViewBounds="true"
+        android:layout_alignLeft="@id/movie_details_title"
+        android:layout_below="@id/movie_details_title" />
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:layout_toEndOf="@id/movie_details_poster"
+        android:layout_toRightOf="@id/movie_details_title"
+        android:layout_below="@id/movie_details_title"
+        android:layout_marginLeft="@dimen/padding_default"
+        android:layout_marginTop="@dimen/padding_large"
+        android:orientation="vertical">
+        <TextView
+            android:id="@+id/movie_details_release"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:textSize="@dimen/text_size_medium" />
+
+        <TextView
+            android:id="@+id/movie_details_rating"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content" />
+    </LinearLayout>
+
+
+
+    <TextView
+        android:id="@+id/movie_details_overview"
+        android:padding="@dimen/padding_default"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_below="@id/movie_details_poster" />
+
+</RelativeLayout>

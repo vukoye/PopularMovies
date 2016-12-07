@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="utf-8"?>
+<menu xmlns:tools="http://schemas.android.com/tools"
+    xmlns:android="http://schemas.android.com/apk/res/android">
+    <item
+        android:id="@+id/action_sort_popularity"
+        android:title="@string/sort_by_popularity"
+        android:showAsAction="never"
+        tools:ignore="AppCompatResource" />
+    <item
+        android:id="@+id/action_sort_rated"
+        android:title="@string/sort_by_rating"
+        android:showAsAction="never"
+        tools:ignore="AppCompatResource" />
+
+    <item
+        android:id="@+id/action_refresh"
+        android:title="@string/refresh"
+        android:showAsAction="never"
+        tools:ignore="AppCompatResource" />
+</menu>
