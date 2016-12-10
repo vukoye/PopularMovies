@@ -15,17 +15,20 @@ import java.net.URL;
 import java.text.DecimalFormat;
 import java.text.NumberFormat;
 
+import butterknife.BindView;
+import butterknife.ButterKnife;
+
 public class DetailsActivity extends AppCompatActivity {
 
-    TextView mTitle;
+    @BindView(R.id.movie_details_title)TextView mTitle;
 
-    TextView mRelease;
+    @BindView(R.id.movie_details_release)TextView mRelease;
 
-    TextView mRating;
+    @BindView(R.id.movie_details_rating)TextView mRating;
 
-    TextView mOverview;
+    @BindView(R.id.movie_details_overview)TextView mOverview;
 
-    ImageView mPoster;
+    @BindView(R.id.movie_details_poster)ImageView mPoster;
 
     MovieDataObject mMovieDataObject;
 
@@ -33,13 +36,7 @@ public class DetailsActivity extends AppCompatActivity {
     protected void onCreate(@Nullable final Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_details);
-        mTitle = (TextView)findViewById(R.id.movie_details_title);
-        mOverview = (TextView)findViewById(R.id.movie_details_overview);
-        mRating = (TextView)findViewById(R.id.movie_details_rating);
-        mRelease = (TextView)findViewById(R.id.movie_details_release);
-        mPoster = (ImageView)findViewById(R.id.movie_details_poster);
-
-
+        ButterKnife.bind(this);
         if (getIntent().getExtras().containsKey(MainActivity.MOVIE)) {
             mMovieDataObject = (MovieDataObject) getIntent().getExtras().get(MainActivity.MOVIE);
             updateScreen();
@@ -51,6 +48,7 @@ public class DetailsActivity extends AppCompatActivity {
     @Override
     public void onCreate(final Bundle savedInstanceState, final PersistableBundle persistentState) {
         super.onCreate(savedInstanceState, persistentState);
+
 
     }
 
