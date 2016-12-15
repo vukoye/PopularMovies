@@ -32,6 +32,8 @@ public class MovieDataObject implements Parcelable{
 
     private double voteAverage;
 
+    private boolean favorite;
+
     public MovieDataObject(final int id, final String posterPath, final double voteAverage, final String title, final String releaseDate, final String
             overview) {
         this.id = id;
@@ -100,6 +102,14 @@ public class MovieDataObject implements Parcelable{
         return 0;
     }
 
+    public boolean isFavorite() {
+        return favorite;
+    }
+
+    public void setFavorite(final boolean favorite) {
+        this.favorite = favorite;
+    }
+
     @Override
     public void writeToParcel(final Parcel parcel, final int i) {
         parcel.writeInt(id);
@@ -121,6 +131,7 @@ public class MovieDataObject implements Parcelable{
     public static Builder newBuilder() {
         return new Builder();
     }
+
 
 
     public static class Builder {

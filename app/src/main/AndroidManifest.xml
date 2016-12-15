@@ -19,6 +19,14 @@
         <activity android:name=".DetailsActivity">
 
         </activity>
+
+        <provider
+            android:authorities="com.vukoye.popularmovies"
+            android:name=".data.MovieContentProvider"
+            android:exported="false" />
+        <service
+            android:name=".data.DownloadMoviesData">
+            </service>
     </application>
 
 </manifest>

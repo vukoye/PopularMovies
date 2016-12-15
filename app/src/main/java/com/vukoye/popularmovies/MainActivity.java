@@ -1,44 +1,54 @@
 package com.vukoye.popularmovies;
 
 import android.content.Intent;
+import android.database.ContentObserver;
+import android.database.Cursor;
 import android.graphics.Rect;
-import android.os.AsyncTask;
+import android.net.Uri;
 import android.os.Bundle;
+import android.os.Handler;
 import android.support.v4.app.LoaderManager;
 import android.support.v4.content.AsyncTaskLoader;
 import android.support.v4.content.Loader;
 import android.support.v7.app.AppCompatActivity;
 import android.support.v7.widget.GridLayoutManager;
 import android.support.v7.widget.RecyclerView;
-import android.text.TextUtils;
+import android.util.Log;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.view.View;
 import android.widget.ProgressBar;
 import android.widget.TextView;
 
+import com.vukoye.popularmovies.data.DownloadMoviesData;
+import com.vukoye.popularmovies.data.MovieContract;
 import com.vukoye.popularmovies.data.MovieDataObject;
-import com.vukoye.popularmovies.utils.MoviesJsonUtil;
 import com.vukoye.popularmovies.utils.NetworkUtils;
 
-import org.json.JSONException;
-
-import java.io.IOException;
-import java.net.MalformedURLException;
 import java.net.URL;
+import java.util.Calendar;
 
 import static com.vukoye.popularmovies.MoviesPreferences.SORT_ORDER_POPULAR;
 import static com.vukoye.popularmovies.MoviesPreferences.SORT_ORDER_TOP_RATED;
+import static com.vukoye.popularmovies.MoviesPreferences.getLastUpdate;
 import static com.vukoye.popularmovies.MoviesPreferences.getSortOrder;
 
-public class MainActivity extends AppCompatActivity implements MoviesAdapter.MoviesAdapterOnClickHandler, LoaderManager.LoaderCallbacks<String> {
+//nvtd no data if disabled network
+
+public class MainActivity extends AppCompatActivity implements MoviesAdapter.MoviesAdapterOnClickHandler, LoaderManager.LoaderCallbacks<Cursor> {
 
     private static final String TAG = MainActivity.class.getSimpleName();
     public static final String MOVIE = "MOVIE";
 
     private static final int MOVIE_LOADER_ID = 54;
 
-    private static final String MOVIE_URL_ID = "movie_url";
+    public static final String MOVIE_URL_ID = "movie_url";
+
+    public static final String MOVIE_ORDER_TOP_RATED = "movie_order_top_rated";
+
+    static final String MOVIE_ID = "movie_id";
+
+    private static final long MS_BETWEEN_UPDATES = 5 * 60 * 1000; // 5 MINUTES
 
     private RecyclerView mRecyclerView;
 
@@ -52,6 +62,7 @@ public class MainActivity extends AppCompatActivity implements MoviesAdapter.Mov
     private String mResponse;
 
     private String lastLoadedWith;
+    private MoviesContentObserver mMoviesContentObserver;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -75,34 +86,93 @@ public class MainActivity extends AppCompatActivity implements MoviesAdapter.Mov
 
         mRecyclerView.setAdapter(mMoviesAdapter);
 
-        loadMoviesData();
+        mMoviesContentObserver = new MoviesContentObserver(new Handler());
+
+        reloadMovies();
     }
 
-    private void loadMoviesData() {
-        URL buildUrl;
-        if (MoviesPreferences.getSortOrder(this).equals(MoviesPreferences.SORT_ORDER_TOP_RATED)) {
-            buildUrl = NetworkUtils.buildTopRatedUrl(MoviesPreferences.API_KEY);
-        } else {
-            buildUrl = NetworkUtils.buildPopularRatedUrl(MoviesPreferences.API_KEY);
+    @Override
+    protected void onStart() {
+        super.onStart();
+        mProgressBar.setVisibility(View.INVISIBLE);
+    }
+
+    @Override
+    protected void onResume() {
+        super.onResume();
+        getContentResolver().registerContentObserver(MovieContract.MovieEntry.CONTENT_URI, true, mMoviesContentObserver);
+    }
+
+    @Override
+    protected void onPause() {
+        super.onPause();
+        getContentResolver().unregisterContentObserver(mMoviesContentObserver);
+    }
+
+    public class MoviesContentObserver extends ContentObserver {
+
+        public MoviesContentObserver(Handler handler) {
+            super(handler);
         }
-        Bundle bundle = new Bundle();
-        bundle.putString(MOVIE_URL_ID, buildUrl.toString());
-        LoaderManager loaderManager = getSupportLoaderManager();
-        Loader<String> loader = loaderManager.getLoader(MOVIE_LOADER_ID);
-        if (loader == null) {
-            loaderManager.initLoader(MOVIE_LOADER_ID, bundle, this);
-        } else {
-            loaderManager.restartLoader(MOVIE_LOADER_ID, bundle, this);
+
+        @Override
+        public void onChange(boolean selfChange) {
+            this.onChange(selfChange, null);
         }
-        //new FetchMovieData().execute(buildUrl);
+
+        @Override
+        public void onChange(boolean selfChange, Uri uri) {
+            loadDataFromDb();
+        }
+
+    }
+
+    private void reloadMovies() {
+        Log.d(TAG, "reloadMovies: ");
+        loadDataFromDb(); // first we load local data if has one
+        if (isNetworkUpdateNeeded()) {
+            Log.d(TAG, "reloadMovies network updated is needed");
+            URL buildUrl;
+            if (MoviesPreferences.getSortOrder(getApplicationContext()).equals(MoviesPreferences.SORT_ORDER_TOP_RATED)) {
+                buildUrl = NetworkUtils.buildTopRatedUrl(MoviesPreferences.API_KEY);
+            } else {
+                buildUrl = NetworkUtils.buildPopularRatedUrl(MoviesPreferences.API_KEY);
+            }
+
+            Intent downloadMoviesIntent = new Intent(this, DownloadMoviesData.class);
+            downloadMoviesIntent.putExtra(MOVIE_URL_ID, buildUrl.toString());
+            downloadMoviesIntent.putExtra(MOVIE_ORDER_TOP_RATED, MoviesPreferences.getSortOrder(getApplicationContext())
+                                                                                  .equals(MoviesPreferences.SORT_ORDER_TOP_RATED));
+            startService(downloadMoviesIntent);
+        } else {
+            Log.d(TAG, "No need for reloading from network");
+        }
+
+    }
+
+    void loadDataFromDb() {
+        if (getLastUpdate(getApplicationContext()) > 0) {
+            Log.d(TAG, "loadDataFromDb: startloader");
+            if (getSupportLoaderManager().getLoader(MOVIE_LOADER_ID) == null) {
+                getSupportLoaderManager().initLoader(MOVIE_LOADER_ID, null, this);
+            } else {
+                getSupportLoaderManager().restartLoader(MOVIE_LOADER_ID, null, this);
+            }
+        }
+    }
+
+    boolean isNetworkUpdateNeeded() {
+        Calendar calendar = Calendar.getInstance();
+        long currentTimeInMs = calendar.getTimeInMillis();
+        return currentTimeInMs - MoviesPreferences.getLastUpdate(getApplicationContext()) > MS_BETWEEN_UPDATES;
     }
 
     @Override
     public boolean onPrepareOptionsMenu(final Menu menu) {
         MenuItem item_popular = menu.findItem(R.id.action_sort_popularity);
         MenuItem item_rated = menu.findItem(R.id.action_sort_rated);
-        item_popular.setVisible(!MoviesPreferences.getSortOrder(this).equals(SORT_ORDER_POPULAR));
-        item_rated.setVisible(!MoviesPreferences.getSortOrder(this).equals(SORT_ORDER_TOP_RATED));
+        item_popular.setVisible(!MoviesPreferences.getSortOrder(getApplicationContext()).equals(SORT_ORDER_POPULAR));
+        item_rated.setVisible(!MoviesPreferences.getSortOrder(getApplicationContext()).equals(SORT_ORDER_TOP_RATED));
         return super.onPrepareOptionsMenu(menu);
     }
 
@@ -113,15 +183,15 @@ public class MainActivity extends AppCompatActivity implements MoviesAdapter.Mov
             case R.id.action_sort_popularity:
                 MoviesPreferences.setSortOrder(SORT_ORDER_POPULAR, this);
                 mResponse = null;
-                loadMoviesData();
+                reloadMovies();
                 break;
             case R.id.action_sort_rated:
                 MoviesPreferences.setSortOrder(SORT_ORDER_TOP_RATED, this);
                 mResponse = null;
-                loadMoviesData();
+                reloadMovies();
                 break;
             case R.id.action_refresh:
-                loadMoviesData();
+                reloadMovies();
                 mResponse = null;
                 break;
         }
@@ -135,9 +205,9 @@ public class MainActivity extends AppCompatActivity implements MoviesAdapter.Mov
     }
 
     @Override
-    public void onClick(final int position) {
+    public void onClick(final int movie_id) {
         Intent detailsIntent = new Intent(this, DetailsActivity.class);
-        detailsIntent.putExtra(MOVIE, mMovieDataObjects[position]);
+        detailsIntent.putExtra(MOVIE_ID, movie_id);
         startActivity(detailsIntent);
     }
 
@@ -152,74 +222,80 @@ public class MainActivity extends AppCompatActivity implements MoviesAdapter.Mov
     }
 
     @Override
-    public Loader<String> onCreateLoader(int id, final Bundle args) {
-        return new AsyncTaskLoader<String>(this) {
-            @Override
-            protected void onStartLoading() {
-                super.onStartLoading();
-                if (args == null) {
-                    return;
-                }
-                mProgressBar.setVisibility(View.VISIBLE);
+    public Loader<Cursor> onCreateLoader(int id, final Bundle args) {
+        if (MOVIE_LOADER_ID == id) {
+            return new AsyncTaskLoader<Cursor>(this) {
+                Cursor mMoviesData = null;
 
-                if (mResponse != null) {
-                    deliverResult(mResponse);
-                } else {
-                    forceLoad();
+                @Override
+                protected void onStartLoading() {
+                    super.onStartLoading();
+                    mProgressBar.setVisibility(View.VISIBLE);
+                    if (mMoviesData != null) {
+                        deliverResult(mMoviesData);
+                    } else {
+                        forceLoad();
+                    }
                 }
-            }
 
-            @Override
-            public void deliverResult(String response) {
-                mResponse = response;
-                super.deliverResult(mResponse);
-            }
+                @Override
+                public Cursor loadInBackground() {
+                    try {
+                        Log.d(TAG, "Start Loading in Background");
+                        String sortOrder;
+                        String where;
+                        String[] whereArgs;
+                        long lastUpdate = getLastUpdate(getApplicationContext());
+                        if (getSortOrder(getApplicationContext()).equals(SORT_ORDER_TOP_RATED)) {
+                            Log.d(TAG, "Load By top rated");
+                            sortOrder = MovieContract.MovieEntry.COLUMN_TOP_RATED_C;
+                            where = MovieContract.MovieEntry.COLUMN_LAST_UPDATED_TOP_RATED + " = ?";
+                        } else {
+                            Log.d(TAG, "Load By popular");
+                            sortOrder = MovieContract.MovieEntry.COLUMN_POPULAR_C;
+                            where = MovieContract.MovieEntry.COLUMN_LAST_UPDATED_POPULAR + " = ?";
+                        }
+                        whereArgs = new String[] { String.valueOf(lastUpdate)};
+                        return getContentResolver().query(MovieContract.MovieEntry.CONTENT_URI, null, where, whereArgs, sortOrder);
+                    } catch (Exception e) {
+                        Log.e(TAG, "Failed to asynchronously load data.");
+                        e.printStackTrace();
+                        return null;
+                    }
+                }
 
-            @Override
-            public String loadInBackground() {
-                String urlString = args.getString(MOVIE_URL_ID);
-                if (TextUtils.isEmpty(urlString)) {
-                    return null;
+                public void deliverResult(Cursor data) {
+                    mMoviesData = data;
+                    super.deliverResult(data);
                 }
-                String response = null;
-                try {
-                    URL url = new URL(urlString);
-                    response = NetworkUtils.getResponseFromHttpUrl(url);
-                } catch (IOException e) {
-                    e.printStackTrace();
-                }
-                return response;
-            }
-        };
+            };
+        }
+        return null;
     }
 
     @Override
-    public void onLoadFinished(Loader<String> loader, String data) {
+    public void onLoadFinished(Loader<Cursor> loader, Cursor data) {
+
         mProgressBar.setVisibility(View.INVISIBLE);
-        try {
-            mResponse = data;
-            mMovieDataObjects = null;
-            if (!TextUtils.isEmpty(mResponse)) {
-                mMovieDataObjects = MoviesJsonUtil.getMovieObjectsFromJSON(MainActivity.this, mResponse);
-            }
-        } catch (JSONException e) {
-            e.printStackTrace();
-        }
-        if (mMovieDataObjects != null) {
-            mMoviesAdapter.setMoviesData(mMovieDataObjects);
-            showMoviesData();
-        } else {
+        if (data == null) {
+            Log.d(TAG, "Load finished no data");
             showErrorMessage();
+        } else {
+            Log.d(TAG, "Load finished showing data");
+            showMoviesData();
+            mMoviesAdapter.swapCursor(data);
         }
+
+
     }
 
     @Override
-    public void onLoaderReset(Loader<String> loader) {
-
+    public void onLoaderReset(Loader<Cursor> loader) {
+        mMoviesAdapter.swapCursor(null);
     }
-
 
     public class SpacesItemDecoration extends RecyclerView.ItemDecoration {
+
         private int space;
 
         public SpacesItemDecoration(int space) {
@@ -227,8 +303,7 @@ public class MainActivity extends AppCompatActivity implements MoviesAdapter.Mov
         }
 
         @Override
-        public void getItemOffsets(Rect outRect, View view,
-                RecyclerView parent, RecyclerView.State state) {
+        public void getItemOffsets(Rect outRect, View view, RecyclerView parent, RecyclerView.State state) {
             outRect.left = space;
             outRect.right = space;
             outRect.bottom = space;
