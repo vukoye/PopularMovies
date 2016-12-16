@@ -35,13 +35,14 @@ public class MovieDataObject implements Parcelable{
     private boolean favorite;
 
     public MovieDataObject(final int id, final String posterPath, final double voteAverage, final String title, final String releaseDate, final String
-            overview) {
+            overview, final boolean favorite) {
         this.id = id;
         this.posterPath = posterPath;
         this.voteAverage = voteAverage;
         this.title = title;
         this.releaseDate = releaseDate;
         this.overview = overview;
+        this.favorite = favorite;
     }
 
     protected MovieDataObject(Parcel in) {
@@ -141,6 +142,7 @@ public class MovieDataObject implements Parcelable{
         private String title;
         private String releaseDate;
         private String overview;
+        private boolean favorite;
 
         public Builder withId(int id) {
             this.id = id;
@@ -172,8 +174,13 @@ public class MovieDataObject implements Parcelable{
             return this;
         }
 
+        public Builder withFavorite(boolean favorite) {
+            this.favorite = favorite;
+            return this;
+        }
+
         public MovieDataObject build() {
-            return new MovieDataObject(id, posterPath, voteAverage, title, releaseDate, overview);
+            return new MovieDataObject(id, posterPath, voteAverage, title, releaseDate, overview, favorite);
         }
     }
 }

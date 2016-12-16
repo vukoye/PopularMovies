@@ -59,6 +59,17 @@ public class MovieContentProvider extends ContentProvider {
                         sortOrder);
                 break;
             case MOVIES_WITH_ID:
+                String id = uri.getPathSegments().get(1);
+                String selection1 = MovieContract.MovieEntry.COLUMN_MOVIE_ID + "=?";
+                String[] selectionArgs1 = new String[]{id};
+                Log.d(TAG, "query: for moviewith id: " + id);
+                cursor = db.query(MovieContract.MovieEntry.TABLE_NAME,
+                        projection,
+                        selection1,
+                        selectionArgs1,
+                        null,
+                        null,
+                        sortOrder);
 
                 break;
         }
@@ -131,6 +142,18 @@ public class MovieContentProvider extends ContentProvider {
 
     @Override
     public int update(final Uri uri, final ContentValues contentValues, final String s, final String[] strings) {
-        return 0;
+        final SQLiteDatabase db = mMoviesDbHelper.getWritableDatabase();
+        int updated = 0;
+        switch (sUriMatcher.match(uri)) {
+            case MOVIES_WITH_ID:
+                String id = uri.getPathSegments().get(1);
+                String where = MovieContract.MovieEntry.COLUMN_MOVIE_ID + "=?";
+                String[] whereArgs = new String[] {id};
+                updated = db.update(MovieContract.MovieEntry.TABLE_NAME, contentValues, where, whereArgs);
+        }
+        if (updated != 0) {
+            getContext().getContentResolver().notifyChange(uri, null);
+        }
+        return updated;
     }
 }

@@ -42,7 +42,7 @@ public class MoviesAdapter extends RecyclerView.Adapter<MoviesAdapter.ViewHolder
 
     @Override
     public void onBindViewHolder(final ViewHolder holder, final int position) {
-        int id = mCursor.getColumnIndex(MovieContract.MovieEntry._ID);
+        int id = mCursor.getColumnIndex(MovieContract.MovieEntry.COLUMN_MOVIE_ID);
         int posterPathIndex = mCursor.getColumnIndex(MovieContract.MovieEntry.COLUMN_POSTER_PATH);
         int titleIndex = mCursor.getColumnIndex(MovieContract.MovieEntry.COLUMN_TITLE);
         if (mCursor.moveToPosition(position)) {

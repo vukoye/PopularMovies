@@ -27,7 +27,17 @@ public class MoviesDbHelper extends SQLiteOpenHelper{
     }
 
     private void createTrailersTable(SQLiteDatabase sqLiteDatabase) {
-        //nvtd
+        final String SQL_CREATE_TRAILERS_TABLE = "CREATE TABLE " + MovieContract.TrailerEntry.TABLE_NAME + " ("
+                + MovieContract.TrailerEntry._ID + " INTEGER PRIMARY KEY AUTOINCREMENT, "
+                + MovieContract.TrailerEntry.COLUMN_MOVIE_ID + " INTEGER NOT NULL, "
+                + MovieContract.TrailerEntry.COLUMN_TRAILER_ID + " TEXT NOT NULL, "
+                + MovieContract.TrailerEntry.COLUMN_KEY + " TEXT NOT NULL, "
+                + MovieContract.TrailerEntry.COLUMN_NAME + " TEXT NOT NULL, "
+                + MovieContract.TrailerEntry.COLUMN_SITE + " TEXT NOT NULL, "
+                + MovieContract.TrailerEntry.COLUMN_SIZE + " INTEGER DEFAULT 0, "
+                + MovieContract.TrailerEntry.COLUMN_TYPE + " TEXT NOT NULL "
+                + "); ";
+        sqLiteDatabase.execSQL(SQL_CREATE_TRAILERS_TABLE);
     }
 
     private void createMoviesTable(SQLiteDatabase sqLiteDatabase) {

@@ -1,12 +1,17 @@
 <?xml version="1.0" encoding="utf-8"?>
-<ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
+<android.support.v4.widget.NestedScrollView
+    xmlns:android="http://schemas.android.com/apk/res/android"
     android:layout_width="match_parent"
     android:layout_height="match_parent">
 
-    <RelativeLayout
+    <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="match_parent"
         android:orientation="vertical">
+
+    <RelativeLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content">
 
         <TextView
             android:id="@+id/movie_details_title"
@@ -45,6 +50,16 @@
                 android:id="@+id/movie_details_rating"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content" />
+            <ImageButton
+                android:id="@+id/movie_details_favorite"
+                android:layout_marginTop="@dimen/padding_large"
+                android:layout_width="@dimen/favorite_size"
+                android:layout_height="@dimen/favorite_size"
+                android:scaleType="fitXY"
+                android:src="@drawable/favorite_button"
+                android:background="@android:color/transparent"
+                android:tint="@color/favorite"
+                />
         </LinearLayout>
 
         <TextView
@@ -53,6 +68,43 @@
             android:layout_height="wrap_content"
             android:layout_below="@id/movie_details_poster"
             android:padding="@dimen/padding_default" />
-
     </RelativeLayout>
-</ScrollView>
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:background="@color/colorPrimaryDark"
+        android:orientation="horizontal">
+        <TextView
+            android:id="@+id/movie_details_trailers_tab"
+            android:layout_width="0dp"
+            android:layout_weight="1"
+            android:layout_height="48dp"
+            android:text="@string/trailers"
+            android:textColor="@android:color/white"
+            android:textAlignment="center"
+            android:textAllCaps="true"
+            android:textSize="@dimen/text_size_small"
+
+            android:padding="@dimen/padding_default" />
+        <TextView
+            android:id="@+id/movie_details_reviews_tab"
+            android:layout_width="0dp"
+            android:layout_height="48dp"
+            android:text="@string/reviews"
+            android:textColor="@android:color/white"
+            android:textSize="@dimen/text_size_small"
+            android:textAlignment="center"
+            android:textAllCaps="true"
+            android:layout_weight="1"
+
+            android:padding="@dimen/padding_default" />
+    </LinearLayout>
+
+    <android.support.v7.widget.RecyclerView
+        android:id="@+id/movie_details_list"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content">
+
+    </android.support.v7.widget.RecyclerView>
+    </LinearLayout>
+</android.support.v4.widget.NestedScrollView>

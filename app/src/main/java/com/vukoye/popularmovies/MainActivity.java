@@ -32,6 +32,10 @@ import static com.vukoye.popularmovies.MoviesPreferences.SORT_ORDER_POPULAR;
 import static com.vukoye.popularmovies.MoviesPreferences.SORT_ORDER_TOP_RATED;
 import static com.vukoye.popularmovies.MoviesPreferences.getLastUpdate;
 import static com.vukoye.popularmovies.MoviesPreferences.getSortOrder;
+import static com.vukoye.popularmovies.data.DownloadMoviesData.ACTION_MOVIES;
+import static com.vukoye.popularmovies.data.DownloadMoviesData.ACTION_TYPE;
+import static com.vukoye.popularmovies.data.DownloadMoviesData.MOVIE_ORDER_TOP_RATED;
+import static com.vukoye.popularmovies.data.DownloadMoviesData.MOVIE_URL_ID;
 
 //nvtd no data if disabled network
 
@@ -41,12 +45,6 @@ public class MainActivity extends AppCompatActivity implements MoviesAdapter.Mov
     public static final String MOVIE = "MOVIE";
 
     private static final int MOVIE_LOADER_ID = 54;
-
-    public static final String MOVIE_URL_ID = "movie_url";
-
-    public static final String MOVIE_ORDER_TOP_RATED = "movie_order_top_rated";
-
-    static final String MOVIE_ID = "movie_id";
 
     private static final long MS_BETWEEN_UPDATES = 5 * 60 * 1000; // 5 MINUTES
 
@@ -140,6 +138,7 @@ public class MainActivity extends AppCompatActivity implements MoviesAdapter.Mov
             }
 
             Intent downloadMoviesIntent = new Intent(this, DownloadMoviesData.class);
+            downloadMoviesIntent.putExtra(ACTION_TYPE, ACTION_MOVIES);
             downloadMoviesIntent.putExtra(MOVIE_URL_ID, buildUrl.toString());
             downloadMoviesIntent.putExtra(MOVIE_ORDER_TOP_RATED, MoviesPreferences.getSortOrder(getApplicationContext())
                                                                                   .equals(MoviesPreferences.SORT_ORDER_TOP_RATED));
@@ -207,7 +206,7 @@ public class MainActivity extends AppCompatActivity implements MoviesAdapter.Mov
     @Override
     public void onClick(final int movie_id) {
         Intent detailsIntent = new Intent(this, DetailsActivity.class);
-        detailsIntent.putExtra(MOVIE_ID, movie_id);
+        detailsIntent.putExtra(DownloadMoviesData.MOVIE_ID, movie_id);
         startActivity(detailsIntent);
     }
 

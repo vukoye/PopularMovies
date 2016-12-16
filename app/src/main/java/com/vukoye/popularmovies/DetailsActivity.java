@@ -1,5 +1,7 @@
 package com.vukoye.popularmovies;
 
+import android.content.ContentValues;
+import android.content.Intent;
 import android.database.ContentObserver;
 import android.database.Cursor;
 import android.net.Uri;
@@ -11,11 +13,14 @@ import android.support.v4.app.LoaderManager;
 import android.support.v4.content.AsyncTaskLoader;
 import android.support.v4.content.Loader;
 import android.support.v7.app.AppCompatActivity;
+import android.support.v7.widget.RecyclerView;
 import android.util.Log;
+import android.widget.ImageButton;
 import android.widget.ImageView;
 import android.widget.TextView;
 
 import com.squareup.picasso.Picasso;
+import com.vukoye.popularmovies.data.DownloadMoviesData;
 import com.vukoye.popularmovies.data.MovieContract;
 import com.vukoye.popularmovies.data.MovieDataObject;
 import com.vukoye.popularmovies.utils.NetworkUtils;
@@ -24,6 +29,12 @@ import java.net.URL;
 
 import butterknife.BindView;
 import butterknife.ButterKnife;
+import butterknife.OnClick;
+
+import static com.vukoye.popularmovies.data.DownloadMoviesData.ACTION_TRAILERS;
+import static com.vukoye.popularmovies.data.DownloadMoviesData.ACTION_TYPE;
+import static com.vukoye.popularmovies.data.DownloadMoviesData.MOVIE_ID;
+import static com.vukoye.popularmovies.data.DownloadMoviesData.MOVIE_URL_ID;
 
 public class DetailsActivity extends AppCompatActivity implements LoaderManager.LoaderCallbacks<Cursor> {
 
@@ -45,6 +56,20 @@ public class DetailsActivity extends AppCompatActivity implements LoaderManager.
     @BindView(R.id.movie_details_poster)
     ImageView mPoster;
 
+    @BindView(R.id.movie_details_favorite)
+    ImageButton mFavorite;
+
+    @BindView(R.id.movie_details_list)
+    RecyclerView mList;
+
+
+
+    // @BindView(R.id.movie_details_toolbar)
+    // Toolbar mToolbar;
+    //
+    // @BindView(R.id.movie_detail_collapsing_toolbar)
+    // CollapsingToolbarLayout mCollapsingToolbarLayout;
+
     MovieDataObject mMovieDataObject;
 
     int mMovieID;
@@ -56,8 +81,8 @@ public class DetailsActivity extends AppCompatActivity implements LoaderManager.
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_details);
         ButterKnife.bind(this);
-        if (getIntent().getExtras().containsKey(MainActivity.MOVIE_ID)) {
-            mMovieID = getIntent().getExtras().getInt(MainActivity.MOVIE_ID);
+        if (getIntent().getExtras().containsKey(DownloadMoviesData.MOVIE_ID)) {
+            mMovieID = getIntent().getExtras().getInt(DownloadMoviesData.MOVIE_ID);
             //mMovieDataObject = (MovieDataObject) getIntent().getExtras().get(MainActivity.MOVIE);
             if (getSupportLoaderManager().getLoader(MOVIE_LOADER_ID) == null) {
                 getSupportLoaderManager().initLoader(MOVIE_LOADER_ID, null, this);
@@ -67,6 +92,18 @@ public class DetailsActivity extends AppCompatActivity implements LoaderManager.
         } else {
             showError();
         }
+        reloadData();
+    }
+
+    private void reloadData() {
+        URL buildUrl = NetworkUtils.buildTrailersUrl(MoviesPreferences.API_KEY, String.valueOf(mMovieID));
+
+
+        Intent downloadTrailersIntent = new Intent(this, DownloadMoviesData.class);
+        downloadTrailersIntent.putExtra(ACTION_TYPE, ACTION_TRAILERS);
+        downloadTrailersIntent.putExtra(MOVIE_URL_ID, buildUrl.toString());
+        downloadTrailersIntent.putExtra(MOVIE_ID, String.valueOf(mMovieID));
+        startService(downloadTrailersIntent);
     }
 
     @Override
@@ -94,9 +131,8 @@ public class DetailsActivity extends AppCompatActivity implements LoaderManager.
                 public Cursor loadInBackground() {
                     try {
                         Log.d(TAG, "Start Loading in Background");
-                        String where = MovieContract.MovieEntry._ID + " = ?";
-                        String[] whereArgs = new String[] {String.valueOf(mMovieID)};
-                        return getContentResolver().query(MovieContract.MovieEntry.CONTENT_URI, null, where, whereArgs, null);
+                        Uri movieUri = MovieContract.MovieEntry.CONTENT_URI.buildUpon().appendPath(String.valueOf(mMovieID)).build();
+                        return getContentResolver().query(movieUri, null, null, null, null);
                     } catch (Exception e) {
                         Log.e(TAG, "Failed to asynchronously load data.");
                         e.printStackTrace();
@@ -135,6 +171,7 @@ public class DetailsActivity extends AppCompatActivity implements LoaderManager.
         int overviewIndex = cursor.getColumnIndex(MovieContract.MovieEntry.COLUMN_OVERVIEW);
         int ratingIndex = cursor.getColumnIndex(MovieContract.MovieEntry.COLUMN_VOTE_AVERAGE);
         int raleaseIndex = cursor.getColumnIndex(MovieContract.MovieEntry.COLUMN_RELEASE_DATE);
+        int favoriteIndex = cursor.getColumnIndex(MovieContract.MovieEntry.COLUMN_FAVORITE);
 
         mMovieDataObject = MovieDataObject.newBuilder()
                                           .withId(cursor.getInt(movie_id))
@@ -143,10 +180,23 @@ public class DetailsActivity extends AppCompatActivity implements LoaderManager.
                                           .withVoteAverage(cursor.getDouble(ratingIndex))
                                           .withReleaseDate(cursor.getString(raleaseIndex))
                                           .withTitle(cursor.getString(titleIndex))
+                                          .withFavorite(cursor.getInt(favoriteIndex) == 1)
                                           .build();
-
-
         }
+    }
+
+    private void updateFavorite(boolean state) {
+        Uri movieUri = MovieContract.MovieEntry.CONTENT_URI.buildUpon().appendPath(String.valueOf(mMovieID)).build();
+        ContentValues contentValues = new ContentValues();
+        contentValues.put(MovieContract.MovieEntry.COLUMN_FAVORITE, state ? 1 : 0);
+        getContentResolver().update(movieUri, contentValues, null, null);
+    }
+
+    @OnClick(R.id.movie_details_favorite)
+    void changeFavoriteState() {
+        mMovieDataObject.setFavorite(!mMovieDataObject.isFavorite());
+        updateFavorite(mMovieDataObject.isFavorite());
+        updateScreen();
     }
 
     @Override
@@ -182,6 +232,7 @@ public class DetailsActivity extends AppCompatActivity implements LoaderManager.
             mOverview.setText(mMovieDataObject.getOverview());
             mRating.setText(getResources().getString(R.string.ratingString, String.format("%.2f", mMovieDataObject.getVoteAverage())));
             mRelease.setText(mMovieDataObject.getReleaseDate().substring(0, 4));
+            mFavorite.setSelected(mMovieDataObject.isFavorite());
             URL url = NetworkUtils.buildImageUrl(mMovieDataObject.getPosterPath());
             Picasso.with(this).load(url.toString()).into(mPoster);
         }
