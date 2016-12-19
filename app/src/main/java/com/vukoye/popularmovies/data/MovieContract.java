@@ -15,12 +15,13 @@ public class MovieContract {
 
     public static final String PATH_MOVIES = "movies";
 
+    public static final String PATH_TRAILERS = "trailers";
 
+    public static final String PATH_REVIEWS = "reviews";
 
     public static final class MovieEntry implements BaseColumns {
 
         public static final Uri CONTENT_URI = BASE_CONTENT_URI.buildUpon().appendPath(PATH_MOVIES).build();
-
 
 
         public static final String TABLE_NAME = "movie";
@@ -50,7 +51,6 @@ public class MovieContract {
         public static final String COLUMN_LAST_UPDATED_TOP_RATED = "last_update_top_rated";
 
 
-
         //not needed for now
 
         public static final String COLUMN_ADULT = "adult";
@@ -66,9 +66,6 @@ public class MovieContract {
         public static final String COLUMN_BACKDROP_PATH = "backdrop_path";
 
 
-
-
-
         public static final String COLUMN_VOTE_COUNT = "vote_count";
 
 
@@ -79,13 +76,26 @@ public class MovieContract {
     }
 
     public static final class ReviewEntry implements BaseColumns {
-        public static final String TABLE_NAME = "trailer";
+
+        public static Uri getContentUri(String movieId) {
+            return BASE_CONTENT_URI.buildUpon().appendPath(PATH_MOVIES).appendPath(movieId).appendPath(PATH_REVIEWS).build();
+        }
+
+        public static final String TABLE_NAME = "review";
 
         public static final String COLUMN_MOVIE_ID = "movie_id"; //id from the api
+        public static final String COLUMN_REVIEW_ID = "review_id"; //id from the api
+        public static final String COLUMN_CONTENT = "content"; //id from the api
+        public static final String COLUMN_AUTHOR = "author"; //id from the api
 
     }
 
     public static final class TrailerEntry implements BaseColumns {
+
+        public static Uri getContentUri(String movieId) {
+            return BASE_CONTENT_URI.buildUpon().appendPath(PATH_MOVIES).appendPath(movieId).appendPath(PATH_TRAILERS).build();
+        }
+
         public static final String TABLE_NAME = "trailer";
 
         public static final String COLUMN_MOVIE_ID = "movie_id"; //id from the api

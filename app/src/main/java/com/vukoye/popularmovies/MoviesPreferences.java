@@ -11,11 +11,11 @@ public class MoviesPreferences {
     public static final String SORT_ORDER_PREF = "SORT_ORDER";
     public static String LAST_TIME_TOP_RATED_PREF = "LAST_TIME_TOP_RATED";
     public static String LAST_TIME_POPULARITY_PREF = "LAST_TIME_POPULARITY";
+    public static String LAST_TIME_REVIEWS_PREF = "LAST_TIME_REVIEWS";
+    public static String LAST_TIME_TRAILERS_PREF = "LAST_TIME_TRAILERS";
     private static final String TAG = MoviesPreferences.class.getSimpleName();
     public static String SORT_ORDER_TOP_RATED = "SORT_ORDER_TOP_RATED";
     public static String SORT_ORDER_POPULAR = "SORT_ORDER_POPULAR";
-
-
 
     public static String API_KEY = "";
 
@@ -52,5 +52,32 @@ public class MoviesPreferences {
         } else {
             return prefs.getLong(LAST_TIME_POPULARITY_PREF, -1);
         }
+    }
+
+    public static long getReviewsLastUpdate(Context context) {
+        SharedPreferences prefs = PreferenceManager.getDefaultSharedPreferences(context);
+        return prefs.getLong(LAST_TIME_REVIEWS_PREF, -1);
+    }
+
+    public static void setLastReviewsUpdate(Context context, long timeInMs) {
+        SharedPreferences preferences = PreferenceManager.getDefaultSharedPreferences(context);
+        SharedPreferences.Editor editor = preferences.edit();
+        Log.d(TAG, "setLastReviewsUpdate: " + timeInMs);
+        editor.putLong(LAST_TIME_REVIEWS_PREF, timeInMs);
+        editor.apply();
+    }
+
+    public static long getTrailersLastUpdate(Context context) {
+        SharedPreferences prefs = PreferenceManager.getDefaultSharedPreferences(context);
+        return prefs.getLong(LAST_TIME_TRAILERS_PREF, -1);
+    }
+
+    public static void setLastTrailersUpdate(Context context, long timeInMs) {
+        SharedPreferences preferences = PreferenceManager.getDefaultSharedPreferences(context);
+        SharedPreferences.Editor editor = preferences.edit();
+        Log.d(TAG, "setLastTrailersUpdate: " + timeInMs);
+        editor.putLong(LAST_TIME_TRAILERS_PREF, timeInMs);
+
+        editor.apply();
     }
 }

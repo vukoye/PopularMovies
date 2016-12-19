@@ -108,7 +108,7 @@ public class NetworkUtils {
         return url;
     }
 
-    private static URL buildReviewsUrl(String api_key, String movieId) {
+    public static URL buildReviewsUrl(String api_key, String movieId) {
         Uri.Builder builder = new Uri.Builder();
         Uri uri = builder.scheme("http")
                          .authority(API_AUTHORITY)

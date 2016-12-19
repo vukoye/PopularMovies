@@ -10,6 +10,8 @@ import android.util.Log;
 
 import com.vukoye.popularmovies.utils.MoviesJsonUtil;
 import com.vukoye.popularmovies.utils.NetworkUtils;
+import com.vukoye.popularmovies.utils.ReviewsJsonUtil;
+import com.vukoye.popularmovies.utils.TrailerJsonUtil;
 
 import org.json.JSONException;
 
@@ -72,17 +74,32 @@ public class DownloadMoviesData extends IntentService {
             URL url = new URL(urlString);
             response = NetworkUtils.getResponseFromHttpUrl(url);
             Log.d(TAG, response);
-            //contentValuesList = MoviesJsonUtil.getContentValuesFromJson(getApplicationContext(), response, isTopRated);
-        } catch (IOException e) {
+            contentValuesList = TrailerJsonUtil.getContentValuesFromJson(getApplicationContext(), response, movieId);
+        } catch (IOException | JSONException e) {
             e.printStackTrace();
         }
         if (null != contentValuesList && contentValuesList.length != 0) {
-            getContentResolver().bulkInsert(MovieContract.MovieEntry.CONTENT_URI, contentValuesList);
+            getContentResolver().bulkInsert(MovieContract.TrailerEntry.getContentUri(movieId), contentValuesList);
         }
     }
 
     private void downloadReviews(String movieId, String urlString) {
-
+        ContentValues[] contentValuesList = null;
+        if (TextUtils.isEmpty(movieId)) {
+            return;
+        }
+        String response;
+        try {
+            URL url = new URL(urlString);
+            response = NetworkUtils.getResponseFromHttpUrl(url);
+            Log.d(TAG, response);
+            contentValuesList = ReviewsJsonUtil.getContentValuesFromJson(getApplicationContext(), response, movieId);
+        } catch (IOException | JSONException e) {
+            e.printStackTrace();
+        }
+        if (null != contentValuesList && contentValuesList.length != 0) {
+            getContentResolver().bulkInsert(MovieContract.ReviewEntry.getContentUri(movieId), contentValuesList);
+        }
     }
 
     private void downloadMovies(final String urlString, final boolean isTopRated) {
