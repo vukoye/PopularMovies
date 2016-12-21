@@ -17,17 +17,18 @@ import android.util.Log;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.view.View;
+import android.widget.LinearLayout;
 import android.widget.ProgressBar;
 import android.widget.TextView;
 
 import com.vukoye.popularmovies.data.DownloadMoviesData;
 import com.vukoye.popularmovies.data.MovieContract;
-import com.vukoye.popularmovies.data.MovieDataObject;
 import com.vukoye.popularmovies.utils.NetworkUtils;
 
 import java.net.URL;
 import java.util.Calendar;
 
+import static com.vukoye.popularmovies.MoviesPreferences.NETWORK_STATE_ERROR;
 import static com.vukoye.popularmovies.MoviesPreferences.SORT_ORDER_POPULAR;
 import static com.vukoye.popularmovies.MoviesPreferences.SORT_ORDER_TOP_RATED;
 import static com.vukoye.popularmovies.MoviesPreferences.getLastUpdate;
@@ -39,14 +40,15 @@ import static com.vukoye.popularmovies.data.DownloadMoviesData.MOVIE_URL_ID;
 
 //nvtd no data if disabled network
 
-public class MainActivity extends AppCompatActivity implements MoviesAdapter.MoviesAdapterOnClickHandler, LoaderManager.LoaderCallbacks<Cursor> {
+public class MainActivity extends AppCompatActivity implements MoviesAdapter.MoviesAdapterOnClickHandler, LoaderManager.LoaderCallbacks<Cursor>,
+        DownloadResultsReceiver.Receiver {
 
     private static final String TAG = MainActivity.class.getSimpleName();
-    public static final String MOVIE = "MOVIE";
 
     private static final int MOVIE_LOADER_ID = 54;
 
-    private static final long MS_BETWEEN_UPDATES = 5 * 60 * 1000; // 5 MINUTES
+    //private static final long MS_BETWEEN_UPDATES = 5 * 60 * 1000; // 5 MINUTES
+    private static final long MS_BETWEEN_UPDATES = 0; // 0 MINUTES (always update)
 
     private RecyclerView mRecyclerView;
 
@@ -56,11 +58,15 @@ public class MainActivity extends AppCompatActivity implements MoviesAdapter.Mov
 
     private ProgressBar mProgressBar;
 
-    private MovieDataObject[] mMovieDataObjects;
-    private String mResponse;
+    private TextView mNetworkState;
 
-    private String lastLoadedWith;
+    private DownloadResultsReceiver mReceiver;
+
+    private LinearLayout mDataContainer;
+
     private MoviesContentObserver mMoviesContentObserver;
+
+    Cursor mMoviesData = null;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -70,6 +76,8 @@ public class MainActivity extends AppCompatActivity implements MoviesAdapter.Mov
         mRecyclerView = (RecyclerView) findViewById(R.id.main_recycle_view);
 
         mErrorMessage = (TextView) findViewById(R.id.main_error_message);
+        mNetworkState = (TextView) findViewById(R.id.main_network_state);
+        mDataContainer = (LinearLayout) findViewById(R.id.main_recycle_container);
 
         mProgressBar = (ProgressBar) findViewById(R.id.main_progress_bar);
 
@@ -85,6 +93,9 @@ public class MainActivity extends AppCompatActivity implements MoviesAdapter.Mov
         mRecyclerView.setAdapter(mMoviesAdapter);
 
         mMoviesContentObserver = new MoviesContentObserver(new Handler());
+
+        mReceiver = new DownloadResultsReceiver(new Handler());
+        mReceiver.setReceiver(this);
 
         reloadMovies();
     }
@@ -107,9 +118,21 @@ public class MainActivity extends AppCompatActivity implements MoviesAdapter.Mov
         getContentResolver().unregisterContentObserver(mMoviesContentObserver);
     }
 
+    @Override
+    public void onReceiveResult(final int resultCode, final Bundle resultData) {
+
+        if (resultCode == MoviesPreferences.NETWORK_STATE_QUERYNG || resultCode == NETWORK_STATE_ERROR) {
+            Log.d(TAG, "onReceiveResult: ERROR");
+            mNetworkState.setVisibility(View.VISIBLE);
+        } else  {
+            Log.d(TAG, "onReceiveResult: IDLE");
+            mNetworkState.setVisibility(View.GONE);
+        }
+    }
+
     public class MoviesContentObserver extends ContentObserver {
 
-        public MoviesContentObserver(Handler handler) {
+        MoviesContentObserver(Handler handler) {
             super(handler);
         }
 
@@ -140,6 +163,7 @@ public class MainActivity extends AppCompatActivity implements MoviesAdapter.Mov
             Intent downloadMoviesIntent = new Intent(this, DownloadMoviesData.class);
             downloadMoviesIntent.putExtra(ACTION_TYPE, ACTION_MOVIES);
             downloadMoviesIntent.putExtra(MOVIE_URL_ID, buildUrl.toString());
+            downloadMoviesIntent.putExtra(DownloadMoviesData.RECEIVER, mReceiver);
             downloadMoviesIntent.putExtra(MOVIE_ORDER_TOP_RATED, MoviesPreferences.getSortOrder(getApplicationContext())
                                                                                   .equals(MoviesPreferences.SORT_ORDER_TOP_RATED));
             startService(downloadMoviesIntent);
@@ -150,13 +174,13 @@ public class MainActivity extends AppCompatActivity implements MoviesAdapter.Mov
     }
 
     void loadDataFromDb() {
-        if (getLastUpdate(getApplicationContext()) > 0) {
-            Log.d(TAG, "loadDataFromDb: startloader");
-            if (getSupportLoaderManager().getLoader(MOVIE_LOADER_ID) == null) {
-                getSupportLoaderManager().initLoader(MOVIE_LOADER_ID, null, this);
-            } else {
-                getSupportLoaderManager().restartLoader(MOVIE_LOADER_ID, null, this);
-            }
+
+        Log.d(TAG, "loadDataFromDb: start loader");
+        if (getSupportLoaderManager().getLoader(MOVIE_LOADER_ID) == null) {
+            getSupportLoaderManager().initLoader(MOVIE_LOADER_ID, null, this);
+        } else {
+            getSupportLoaderManager().restartLoader(MOVIE_LOADER_ID, null, this);
+
         }
     }
 
@@ -181,17 +205,17 @@ public class MainActivity extends AppCompatActivity implements MoviesAdapter.Mov
         switch (item.getItemId()) {
             case R.id.action_sort_popularity:
                 MoviesPreferences.setSortOrder(SORT_ORDER_POPULAR, this);
-                mResponse = null;
+                mMoviesData = null;
                 reloadMovies();
                 break;
             case R.id.action_sort_rated:
                 MoviesPreferences.setSortOrder(SORT_ORDER_TOP_RATED, this);
-                mResponse = null;
+                mMoviesData = null;
                 reloadMovies();
                 break;
             case R.id.action_refresh:
+                mMoviesData = null;
                 reloadMovies();
-                mResponse = null;
                 break;
         }
         return super.onOptionsItemSelected(item);
@@ -212,11 +236,13 @@ public class MainActivity extends AppCompatActivity implements MoviesAdapter.Mov
 
     private void showMoviesData() {
         mErrorMessage.setVisibility(View.INVISIBLE);
+        mDataContainer.setVisibility(View.VISIBLE);
         mRecyclerView.setVisibility(View.VISIBLE);
+
     }
 
     private void showErrorMessage() {
-        mRecyclerView.setVisibility(View.INVISIBLE);
+        mDataContainer.setVisibility(View.GONE);
         mErrorMessage.setVisibility(View.VISIBLE);
     }
 
@@ -224,7 +250,6 @@ public class MainActivity extends AppCompatActivity implements MoviesAdapter.Mov
     public Loader<Cursor> onCreateLoader(int id, final Bundle args) {
         if (MOVIE_LOADER_ID == id) {
             return new AsyncTaskLoader<Cursor>(this) {
-                Cursor mMoviesData = null;
 
                 @Override
                 protected void onStartLoading() {
@@ -254,7 +279,7 @@ public class MainActivity extends AppCompatActivity implements MoviesAdapter.Mov
                             sortOrder = MovieContract.MovieEntry.COLUMN_POPULAR_C;
                             where = MovieContract.MovieEntry.COLUMN_LAST_UPDATED_POPULAR + " = ?";
                         }
-                        whereArgs = new String[] { String.valueOf(lastUpdate)};
+                        whereArgs = new String[] {String.valueOf(lastUpdate)};
                         return getContentResolver().query(MovieContract.MovieEntry.CONTENT_URI, null, where, whereArgs, sortOrder);
                     } catch (Exception e) {
                         Log.e(TAG, "Failed to asynchronously load data.");
@@ -276,7 +301,7 @@ public class MainActivity extends AppCompatActivity implements MoviesAdapter.Mov
     public void onLoadFinished(Loader<Cursor> loader, Cursor data) {
 
         mProgressBar.setVisibility(View.INVISIBLE);
-        if (data == null) {
+        if (data == null || data.getCount() <= 0) {
             Log.d(TAG, "Load finished no data");
             showErrorMessage();
         } else {
@@ -284,7 +309,6 @@ public class MainActivity extends AppCompatActivity implements MoviesAdapter.Mov
             showMoviesData();
             mMoviesAdapter.swapCursor(data);
         }
-
 
     }
 
@@ -297,7 +321,7 @@ public class MainActivity extends AppCompatActivity implements MoviesAdapter.Mov
 
         private int space;
 
-        public SpacesItemDecoration(int space) {
+        SpacesItemDecoration(int space) {
             this.space = space;
         }
 

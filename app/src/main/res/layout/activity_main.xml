@@ -5,11 +5,25 @@
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     tools:context="com.vukoye.popularmovies.MainActivity">
-
-    <android.support.v7.widget.RecyclerView
-        android:id="@+id/main_recycle_view"
+    <LinearLayout
+        android:id="@+id/main_recycle_container"
         android:layout_width="match_parent"
-        android:layout_height="match_parent" />
+        android:layout_height="match_parent"
+        android:orientation="vertical">
+        <TextView
+            android:id="@+id/main_network_state"
+            android:layout_width="match_parent"
+            android:layout_height="24dp"
+            android:gravity="center"
+            android:text = "@string/offline"
+            android:visibility="visible"/>
+
+        <android.support.v7.widget.RecyclerView
+            android:id="@+id/main_recycle_view"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent" />
+    </LinearLayout>
+
 
     <TextView
         android:id="@+id/main_error_message"

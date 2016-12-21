@@ -61,7 +61,7 @@ public class MoviesDbHelper extends SQLiteOpenHelper{
                 + MovieContract.MovieEntry.COLUMN_POPULAR_C + " INTEGER DEFAULT 10000, "
                 + MovieContract.MovieEntry.COLUMN_LAST_UPDATED_POPULAR + " INTEGER DEFAULT -1, "
                 + MovieContract.MovieEntry.COLUMN_TOP_RATED_C + " INTEGER DEFAULT 10000, "
-                + MovieContract.MovieEntry.COLUMN_LAST_UPDATED_TOP_RATED+ " INTEGER DEFAULT -1"
+                + MovieContract.MovieEntry.COLUMN_LAST_UPDATED_TOP_RATED + " INTEGER DEFAULT -1"
                 + "); ";
                 //+ " UNIQUE (" + MovieContract.MovieEntry.COLUMN_MOVIE_ID + ") ON CONFLICT REPLACE);";
         sqLiteDatabase.execSQL(SQL_CREATE_MOVIES_TABLE);

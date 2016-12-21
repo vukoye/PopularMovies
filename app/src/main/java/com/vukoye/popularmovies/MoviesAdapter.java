@@ -7,7 +7,9 @@ import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.ImageView;
+import android.widget.TextView;
 
+import com.squareup.picasso.Callback;
 import com.squareup.picasso.Picasso;
 import com.vukoye.popularmovies.data.MovieContract;
 import com.vukoye.popularmovies.utils.NetworkUtils;
@@ -45,10 +47,23 @@ public class MoviesAdapter extends RecyclerView.Adapter<MoviesAdapter.ViewHolder
         int id = mCursor.getColumnIndex(MovieContract.MovieEntry.COLUMN_MOVIE_ID);
         int posterPathIndex = mCursor.getColumnIndex(MovieContract.MovieEntry.COLUMN_POSTER_PATH);
         int titleIndex = mCursor.getColumnIndex(MovieContract.MovieEntry.COLUMN_TITLE);
+        holder.movieImage.setVisibility(View.VISIBLE);
+        holder.movieName.setVisibility(View.GONE);
         if (mCursor.moveToPosition(position)) {
             URL url = NetworkUtils.buildImageUrl(mCursor.getString(posterPathIndex));
-            Picasso.with(mContext).load(url.toString()).into(holder.movieImage);
-            holder.movieImage.setContentDescription(mCursor.getString(titleIndex));
+            Picasso.with(mContext).load(url.toString()).into(holder.movieImage, new Callback() {
+                        @Override
+                        public void onSuccess() {
+
+                        }
+
+                        @Override
+                        public void onError() {
+                            holder.movieName.setVisibility(View.VISIBLE);
+                            holder.movieImage.setVisibility(View.GONE);
+                        }
+                    });
+                    holder.movieImage.setContentDescription(mCursor.getString(titleIndex));
             holder.movieImage.setTag(mCursor.getInt(id));
         }
     }
@@ -62,14 +77,11 @@ public class MoviesAdapter extends RecyclerView.Adapter<MoviesAdapter.ViewHolder
     }
 
     public Cursor swapCursor(Cursor c) {
-        // check if this cursor is the same as the previous cursor (mCursor)
         if (mCursor == c) {
-            return null; // bc nothing has changed
+            return null;
         }
         Cursor temp = mCursor;
-        this.mCursor = c; // new cursor value assigned
-
-        //check if this is a valid cursor, then update the cursor
+        this.mCursor = c;
         if (c != null) {
             this.notifyDataSetChanged();
         }
@@ -80,10 +92,12 @@ public class MoviesAdapter extends RecyclerView.Adapter<MoviesAdapter.ViewHolder
     public class ViewHolder extends RecyclerView.ViewHolder implements View.OnClickListener{
 
         ImageView movieImage;
+        TextView movieName;
 
         public ViewHolder(final View itemView) {
             super(itemView);
             movieImage = (ImageView)itemView.findViewById(R.id.movie_list_item_image);
+            movieName = (TextView)itemView.findViewById(R.id.movie_list_item_name);
             movieImage.setOnClickListener(this);
 
         }
